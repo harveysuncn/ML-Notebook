@@ -80,7 +80,6 @@ if __name__ == '__main__':
     batch_size = 256
     dataset = Dataset(batch_size)
     train_iter, test_iter = dataset.load()
-
     for epoch in range(num_epochs):
         net.train() # 训练模式
         for X, y in train_iter:
@@ -92,14 +91,15 @@ if __name__ == '__main__':
         #=============================
         net.eval() # 评估模式，不更新参数
         correct = 0
+        total = 0
         num_batch = 0
         epoch_loss = 0
-        for X, y in train_iter:
+        for X, y in test_iter:
             y_hat = net(X)
             epoch_loss += loss(y_hat, y).item()*len(y)
             correct += accuracy(y_hat, y)  
             num_batch += 1
-        total = min(num_batch*batch_size, 60000)
+            total += len(y)
         # 统计本次EPOCH训练结果：正确个数，正确率，loss
         print("EPOCH {}: {} correct, {:.2f}% correction, {:.2f} loss"
               .format(epoch, int(correct), correct/total*100, epoch_loss/total))
