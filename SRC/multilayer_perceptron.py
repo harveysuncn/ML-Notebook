@@ -74,7 +74,7 @@ def accuracy(y_hat, y):
 if __name__ == '__main__':
     torch.multiprocessing.freeze_support()
     
-    batch_size, lr, num_epochs = 128, 0.1, 30
+    batch_size, lr, num_epochs = 256, 0.1, 25
     loss = nn.CrossEntropyLoss()
     trainer = torch.optim.SGD(net.parameters(), lr=lr)
     dataset = Dataset(batch_size)
