@@ -13,7 +13,7 @@ import jieba
 import gensim.models
 
 class Comments:
-    ''' Comments Corpus '''
+    ''' Load Comments '''
     def __iter__(self):
         # comments corpus 
         file_path = "..\\Datasets\\datafountain_O2O_comments\\train.csv"
@@ -24,6 +24,7 @@ class Comments:
 
     
 class CommentCorpus:
+    ''' Comment Corpus '''
     def __init__(self):
         self.raw_data = Comments()
         # stopwords corpus
