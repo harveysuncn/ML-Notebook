@@ -9,6 +9,7 @@ import asyncio
 from pyppeteer import launch
 from pyquery import PyQuery as pq
 from urllib.parse import urljoin
+from pyppeteer.errors import TimeoutError
 
 
 def index_parser(current_url, content):
@@ -25,6 +26,10 @@ def more_comment_parser(content):
     more_comment = doc(".fetch-more-action")
     return more_comment
 
+def no_comment_parser(content):
+    doc = pq(content)
+    no_comment = doc(".to-bottom")
+    return no_comment
     
 def comment_parser(content):
     doc = pq(content)
@@ -36,7 +41,7 @@ def comment_parser(content):
     return comments
 
 def save_comment(game_name, comments):
-    with open("comments.csv", 'a', newline='') as csvfile:
+    with open("sonkwo_comments.csv", 'a', newline='') as csvfile:
         fieldnames = ['game', 'comment']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         
@@ -47,33 +52,52 @@ def save_comment(game_name, comments):
                 continue
             
 
-async def page_browser(url):
-    pass
-
-
-async def browser(url):
-    brow = await launch({'headless': False})
-    page = await brow.newPage()
-    await page.goto(url)
-    urls, next_url = index_parser(url, await page.content())
-    
-    for url in urls[1:]:
+async def page_browser(url, browser):
+    try:
+        page = await browser.newPage()
         await page.goto(url)
+        await page.waitForSelector('.SK-footer-left');
         await page.hover(".SK-footer-left")
         await page.waitFor(2*1000)
+        
         more_comment = more_comment_parser(await page.content())
         while more_comment.text() == '查看更多评论':
             await page.click(".fetch-more-action")
             await page.waitFor(2*1000)
             more_comment = more_comment_parser(await page.content())
+            no_comment = no_comment_parser(await page.content())
+            if no_comment:
+                break
+            
         
         #await page.evaluate('_ => {window.scrollBy(0, window.innerHeight);}')
         comments = comment_parser(await page.content())
-        save_comment(await page.title(), comments)
-        print(len(comments))
-        
-    #await brow.close()
-    
+        title = await page.title()
+        save_comment(title, comments)
+        print(title, len(comments))
+    except TimeoutError:
+        print("url time exceed", url)
+    finally:
+        await page.close()
 
-index_url = "https://www.sonkwo.com/store/search"
-asyncio.get_event_loop().run_until_complete(browser(index_url))
+
+async def browser(url):
+    brow = await launch({'headless': True})
+    page = await brow.newPage()
+    await page.goto(url)
+    urls, next_url = index_parser(url, await page.content())
+    tasks = []
+    
+    for url in urls:
+        tasks.append(page_browser(url, brow))
+    await asyncio.gather(*tasks)
+        
+    await brow.close()
+
+if __name__ == '__main__':    
+    # https://www.sonkwo.com/store/search?order=desc&page=30&sort=wishes_count
+    
+    for i in range(1, 2):
+        index_url = "https://www.sonkwo.com/store/search?order=desc&page={}&sort=wishes_count".format(i)
+        print("Page:", i)
+        asyncio.get_event_loop().run_until_complete(browser(index_url))
