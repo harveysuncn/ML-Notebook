@@ -54,7 +54,7 @@ def games_sentiment():
     
     avg = dict()
     for game in game_list:
-        avg[game] = game_senti[game]/(comments_amount[game]+1e-15)
+        avg[game] = game_senti[game]/(comments_amount[game]+1e-15) # division by zero
     return sorted(avg.items(), key=lambda kv:(kv[1], kv[0]))
     
 
